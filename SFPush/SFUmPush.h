@@ -19,7 +19,8 @@
              didNotificationResponse:(UNNotificationResponse *)response;
 
 - (void)userNotificationOfForeGround:(UNUserNotificationCenter *)center
-             didNotificationResponse:(UNNotification *)response;
+             didNotificationResponse:(UNNotification *)response
+                            msgBlock:(void (^)(UNNotificationPresentationOptions))block;
 
 - (void)userNoficationApplication:(UIApplication *)application
      didReceiveRemoteNotification:(NSDictionary *)userInfo;

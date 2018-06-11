@@ -9,6 +9,12 @@
 #import "SFUmPush.h"
 #import <UMPush/UMessage.h>
 
+@interface SFUmPush()<UNUserNotificationCenterDelegate>
+@property (nonatomic, assign) BOOL sound;
+@property (nonatomic, assign) BOOL badge;
+@property (nonatomic, assign) BOOL alert;
+@end
+
 @implementation SFUmPush
 
 + (SFUmPush *)share{
@@ -31,6 +37,16 @@
 }
 
 RCT_EXPORT_MODULE();
+
+RCT_EXPORT_METHOD(setMsgConfig:(BOOL)isNeedSound
+                  isNeedBadge:(BOOL)isNeedBadge
+                  isNeedAlert:(BOOL)isNeedAlert)
+{
+  self.sound = isNeedSound;
+  self.badge = isNeedBadge;
+  self.alert = isNeedAlert;
+  //UNNotificationPresentationOptionSound|UNNotificationPresentationOptionBadge|UNNotificationPresentationOptionAlert
+}
 
 - (void)setPushConfig:(NSDictionary *)launchOptions{
   // Push功能配置
@@ -65,7 +81,7 @@ RCT_EXPORT_MODULE();
     NSSet *categories = [NSSet setWithObjects:category1_ios10, nil];
     entity.categories=categories;
   }
-  [UNUserNotificationCenter currentNotificationCenter].delegate=self;
+  [UNUserNotificationCenter currentNotificationCenter].delegate = self;
   [UMessage registerForRemoteNotificationsWithLaunchOptions:launchOptions Entity:entity completionHandler:^(BOOL granted, NSError * _Nullable error) {
     if (granted) {
     }else{
@@ -110,11 +126,30 @@ RCT_EXPORT_MODULE();
 
 - (void)userNotificationOfForeGround:(UNUserNotificationCenter *)center
              didNotificationResponse:(UNNotification *)response
+                            msgBlock:(void (^)(UNNotificationPresentationOptions))block
 {
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
   NSDictionary *userInfo = response.request.content.userInfo;
   if([response.request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {
     [UMessage setAutoAlert:NO];
+    
+    if (self.sound && self.alert && self.badge)
+      block(UNNotificationPresentationOptionSound|UNNotificationPresentationOptionBadge|UNNotificationPresentationOptionAlert);
+    if (!self.sound && self.alert && self.badge)
+      block(UNNotificationPresentationOptionBadge|UNNotificationPresentationOptionAlert);
+    if (self.sound && !self.alert && self.badge)
+      block(UNNotificationPresentationOptionSound|UNNotificationPresentationOptionBadge);
+    if (self.sound && self.alert && !self.badge)
+      block(UNNotificationPresentationOptionSound|UNNotificationPresentationOptionAlert);
+    if (!self.sound && !self.alert && self.badge)
+      block(UNNotificationPresentationOptionBadge);
+    if (!self.sound && self.alert && !self.badge)
+      block(UNNotificationPresentationOptionAlert);
+    if (self.sound && !self.alert && !self.badge)
+      block(UNNotificationPresentationOptionSound);
+    if (!self.sound && !self.alert && !self.badge)
+      
+    
     //应用处于前台时的远程推送接受
     //必须加这句代码
     [UMessage didReceiveRemoteNotification:userInfo];
